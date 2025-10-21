@@ -7,7 +7,7 @@ services:
       # 1) extrai o ZIP na raiz do projeto
       npx --yes extract-zip havix-erp.zip $PWD
 
-      # 2) garante a pasta do schema e injeta um schema válido
+      # 2) garante a pasta do schema e injeta um schema válido (relacionamentos OK)
       mkdir -p prisma
       cat > prisma/schema.prisma <<'PRISMA'
       datasource db {
@@ -57,7 +57,7 @@ services:
         productId   String
         warehouseId String?
         quantity    Int
-        type        String     // "IN" | "OUT" (ajuste simples)
+        type        String     // "IN" | "OUT"
         date        DateTime   @default(now())
 
         product   Product   @relation(fields: [productId], references: [id])
@@ -74,12 +74,12 @@ services:
       }
       PRISMA
 
-      # 3) instala dependências do backend e gera o client
+      # 3) instala deps, gera Prisma e **COMPILA** (gera dist/)
       cd apps/backend
       npm install
       npx prisma generate --schema=../../prisma/schema.prisma
+      npm run build
     startCommand: |
-      # aplica o schema no Postgres e inicia a API
       cd apps/backend
       npx prisma db push --schema=../../prisma/schema.prisma
       npm run start
