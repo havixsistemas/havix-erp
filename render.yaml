@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: havix-web
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    rootDir: ./apps/web
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_URL
+        value: https://havix-api.onrender.com
+
+  - type: web
+    name: havix-api
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    rootDir: ./apps/backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: PORT
+        value: 3000
