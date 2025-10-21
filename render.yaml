@@ -4,13 +4,84 @@ services:
     env: node
     plan: free
     buildCommand: |
+      # 1) extrai o ZIP na raiz do projeto
       npx --yes extract-zip havix-erp.zip $PWD
+
+      # 2) garante a pasta do schema e injeta um schema válido
+      mkdir -p prisma
+      cat > prisma/schema.prisma <<'PRISMA'
+      datasource db {
+        provider = "postgresql"
+        url      = env("DATABASE_URL")
+      }
+
+      generator client {
+        provider = "prisma-client-js"
+      }
+
+      model Company {
+        id            String        @id @default(cuid())
+        name          String
+        products      Product[]
+        warehouses    Warehouse[]
+        ledgerEntries LedgerEntry[]
+        createdAt     DateTime      @default(now())
+        updatedAt     DateTime      @updatedAt
+      }
+
+      model Product {
+        id             String          @id @default(cuid())
+        sku            String          @unique
+        name           String
+        salePrice      Decimal         @db.Decimal(10,2)
+        costPrice      Decimal         @db.Decimal(10,2)
+        companyId      String?
+        company        Company?        @relation(fields: [companyId], references: [id])
+        stockMovements StockMovement[]
+        createdAt      DateTime        @default(now())
+        updatedAt      DateTime        @updatedAt
+      }
+
+      model Warehouse {
+        id             String          @id @default(cuid())
+        name           String
+        companyId      String?
+        company        Company?        @relation(fields: [companyId], references: [id])
+        stockMovements StockMovement[]
+        createdAt      DateTime        @default(now())
+        updatedAt      DateTime        @updatedAt
+      }
+
+      model StockMovement {
+        id          String     @id @default(cuid())
+        productId   String
+        warehouseId String?
+        quantity    Int
+        type        String     // "IN" | "OUT" (ajuste simples)
+        date        DateTime   @default(now())
+
+        product   Product   @relation(fields: [productId], references: [id])
+        warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
+      }
+
+      model LedgerEntry {
+        id        String   @id @default(cuid())
+        companyId String
+        date      DateTime @default(now())
+        amount    Decimal  @db.Decimal(10,2)
+
+        company Company @relation(fields: [companyId], references: [id])
+      }
+      PRISMA
+
+      # 3) instala dependências do backend e gera o client
       cd apps/backend
       npm install
-      npx prisma generate
+      npx prisma generate --schema=../../prisma/schema.prisma
     startCommand: |
+      # aplica o schema no Postgres e inicia a API
       cd apps/backend
-      npx prisma db push
+      npx prisma db push --schema=../../prisma/schema.prisma
       npm run start
     envVars:
       - key: DATABASE_URL
