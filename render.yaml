@@ -10,7 +10,7 @@ services:
       npx prisma generate
     startCommand: |
       cd apps/backend
-      npx prisma migrate deploy
+      npx prisma db push
       npm run start
     envVars:
       - key: DATABASE_URL
