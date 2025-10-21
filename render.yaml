@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: havix-api
+    env: node
+    plan: free
+    buildCommand: |
+      unzip -o havix-erp.zip
+      cd apps/backend
+      npm install
+      npx prisma generate
+    startCommand: |
+      cd apps/backend
+      npx prisma migrate deploy
+      npm run start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+
+  - type: web
+    name: havix-web
+    env: node
+    plan: free
+    buildCommand: |
+      unzip -o havix-erp.zip
+      cd apps/web
+      npm install
+      npm run build
+    startCommand: |
+      cd apps/web
+      npm run start
